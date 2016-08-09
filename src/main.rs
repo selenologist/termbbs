@@ -46,9 +46,9 @@ fn main() {
         uniform float     scanline_y;
 
         void main() {
-            float scantensity = max(0,1.0 - (distance(-v_position_y, scanline_y*2 - 1.0) * 5.0));
+            float scantensity = max(0,1.0 - (distance(-v_position_y, scanline_y*2 - 1.0) * 6.0));
             color = texture(tex, v_tex_coord) * max(0.5, scantensity);
-            float increase = (scantensity*scantensity) * 0.05;
+            float increase = (scantensity*scantensity) * 0.03;
             color.b = color.b + increase;
             color.g = color.g + increase;
         }

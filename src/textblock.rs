@@ -180,9 +180,9 @@ impl TextBlock{
                     &Default::default()).expect("Failed to draw");
 
 
-        self.scanline_y += 1.0f32 / 15.0f32; // this is just some random number tbh
+        self.scanline_y += 1.0f32 / 5.0f32 + 0.02f32; // this is just some random number tbh. Should appear like multiple bars crawling up the screen.
         if self.scanline_y > 1.2{   // if greater than the size of the screen and a little bit
-            self.scanline_y -= 1.8; // set the scanline to just before the screen by a little bit (-0.4)
+            self.scanline_y -= 1.4; // set the scanline to just before the screen by a little bit (-0.4)
         }
     }
 }
