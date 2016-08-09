@@ -1,0 +1,10 @@
+[package]
+name = "gltiles"
+version = "0.1.0"
+authors = ["Selenologist <none@example.com>"]
+
+[dependencies]
+image = "*"
+glium = "*"
+rustc-serialize = "0.3" # will port to Serde when stable
+nalgebra = "*"

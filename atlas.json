@@ -1,0 +1,6 @@
+{
+    "tile_width":  10,
+    "tile_height": 14,
+    "atlas_path":  "./atlas.png",
+    "tile_labels": null
+}
