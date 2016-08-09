@@ -5,10 +5,13 @@ extern crate rustc_serialize;
 extern crate nalgebra;
 
 mod atlas;
-mod tileblock;
+mod textblock;
 
 use atlas::Atlas;
-use tileblock::*;
+use textblock::*;
+
+use std::fs::File;
+use std::io::Read;
 
 fn main() {
     use glium::{DisplayBuild, Surface};
@@ -18,28 +21,36 @@ fn main() {
     let vertex_shader_src = r#"
         #version 140
 
-        in vec2 position;
-        in vec2 texcoord;
-        out vec2 v_tex_coord;
+        in vec2   position;
+        in vec2   texcoord;
+        out vec2  v_tex_coord;
+        out float v_position_y;
 
         uniform mat3 matrix;
 
         void main() {
             v_tex_coord = texcoord;
             gl_Position = vec4(matrix * vec3(position, 1.0), 1.0);
+            v_position_y = gl_Position.y;
         }
     "#;
 
     let fragment_shader_src = r#"
         #version 140
 
-        in vec2 v_tex_coord;
+        in vec2  v_tex_coord;
+        in float v_position_y;
         out vec4 color;
 
         uniform sampler2D tex;
+        uniform float     scanline_y;
 
         void main() {
-            color = texture(tex, v_tex_coord);
+            float scantensity = max(0,1.0 - (distance(-v_position_y, scanline_y*2 - 1.0) * 5.0));
+            color = texture(tex, v_tex_coord) * max(0.5, scantensity);
+            float increase = (scantensity*scantensity) * 0.05;
+            color.b = color.b + increase;
+            color.g = color.g + increase;
         }
     "#;
 
@@ -50,20 +61,30 @@ fn main() {
         Err(e) => return println!("Failed to load Atlas {:?}", e)
     };
 
-    let textvec: Vec<u8> = "Hello world".chars().map(|x| (x as u8 - 0x20) as u8).collect();
+    display
+        .get_window()
+        .unwrap()
+        .set_inner_size(800,
+                        600);
 
-    let mut tb = match TileBlock::new(&display, &atl, 11, 1, Some(&textvec)){
-        Ok(ok) => ok,
-        Err(e) => return println!("Failed to create TileBlock {:?}", e)
+    let mut textvec: Vec<u8> = Vec::new();
+    match File::open("screen.init"){
+        Ok(mut file) => { file.read_to_end(&mut textvec);
+                          textvec = textvec.iter().map(|&x| (-0x20i32 + x as i32) as u8).collect(); },
+        Err(_) => { textvec = (0u32..(80u32*25u32)).map(|x| (0x10 + x % 10) as u8).collect(); }
     };
 
-    let mut t = 0.0f32;
+
+    let mut tb = match TextBlock::new(&display, &atl, 80, 25, Some(&textvec)){
+        Ok(ok) => ok,
+        Err(e) => return println!("Failed to create TextBlock {:?}", e)
+    };
 
     loop {
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 0.0, 1.0);
 
-        tb.draw(&program, &mut target, &atl, [0.0, 0.0]);
+        tb.draw(&program, &mut target, &atl);
 
         target.finish().unwrap();
 
@@ -73,7 +94,5 @@ fn main() {
                 _ => ()
             }
         }
-
-        t = t + 0.01f32;
     }
 }
