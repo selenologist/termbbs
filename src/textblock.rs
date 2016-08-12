@@ -2,6 +2,7 @@ use atlas;
 use glium;
 
 use atlas::Atlas;
+use profiling_timers::ScopeTimer;
 
 #[derive(Copy, Clone)]
 struct Vertex {
@@ -49,7 +50,7 @@ impl TextBlock{
                     Corner::BL => (0, 0),
                     Corner::BR => (1, 0)
                 };
-            [atlas.tile_w_f / atlas.atlas_w_f * (tile_id % atlas_columns + addx) as f32,
+            [         atlas.tile_w_f / atlas.atlas_w_f * (tile_id % atlas_columns + addx) as f32,
              1.0f32 - atlas.tile_h_f / atlas.atlas_h_f * (tile_id / atlas_columns + addy) as f32]
         };
 
@@ -75,22 +76,29 @@ impl TextBlock{
          (index_base + 2)    as u16, (index_base + 1) as u16, (index_base + 3) as u16]
     }
 
+    #[allow(unused_variables)]
     fn update(&self){
-        let triangles:Vec<Vertex> =
-            self.block.iter()
-            .enumerate()
-            .fold(Vec::new(),
-                  |mut acc, tile| {
-                let index   = tile.0 as u32;
-                let tile_id = *tile.1 as u32;
-                      acc.extend_from_slice(
-                          &self.generate_tile_triangles(
-                                             [(index % self.width) as f32,
-                                              (index / self.width) as f32],
-                                                        tile_id));
-                      acc});
+        let outer = ScopeTimer::new("triangle-based update");
 
-        self.vbo.write(&triangles);
+        let mut triangles:Vec<Vertex>;
+        {
+            let generation_timer = ScopeTimer::new("vtex array generation");
+            triangles = Vec::with_capacity((self.height * self.width * 4) as usize); // 4 unique vertices per tile
+            for (_index, _tile_id) in self.block.iter().enumerate(){
+                let index   =  _index as u32;
+                let tile_id = *_tile_id as u32;
+                triangles.extend_from_slice(
+                    &self.generate_tile_triangles(
+                                        [(index % self.width) as f32,
+                                         (index / self.width) as f32],
+                        tile_id));
+            }
+        }
+
+        {
+            let upload_timer = ScopeTimer::new("GPU upload");
+            self.vbo.write(&triangles);
+        }
     }
 
     pub fn new<F>(glium: &F, atlas: &Atlas,
@@ -120,7 +128,7 @@ impl TextBlock{
 
         let indices:Vec<u16> =
             (0..(width * height))
-            .fold(Vec::<u16>::new(),
+            .fold(Vec::<u16>::with_capacity((height * width * 6) as usize), // 6 indexed vertices per tile
                   |mut acc, tile_index|
                   { acc.extend_from_slice(&TextBlock::generate_tile_indices(tile_index as u32));
                     acc });

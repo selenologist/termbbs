@@ -3,9 +3,11 @@ extern crate glium;
 extern crate image;
 extern crate rustc_serialize;
 extern crate nalgebra;
+extern crate time;
 
 mod atlas;
 mod textblock;
+mod profiling_timers;
 
 use atlas::Atlas;
 use textblock::*;
