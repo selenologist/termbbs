@@ -1,7 +1,7 @@
 [package]
 name = "textbbs"
 version = "0.1.0"
-authors = ["Selenologist <none@example.com>"]
+authors = ["Selenologist <selenologist@users.noreply.github.com>"]
 
 [dependencies]
 rand = "0.3"
